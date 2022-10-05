@@ -490,7 +490,7 @@ public class User {
     private String username;
     private String password;
     private String role;
-    private boolean enabled;
+    private boolean enabled; // not required
  
     // getters and setters are not shown for brevity
 
@@ -527,7 +527,7 @@ public class MyUserDetails implements UserDetails {
                 .getRoles()
                 .split(","))
                 .map(SimpleGrantedAuthority::new)
-                .toList();;
+                .toList();
     }
  
     @Override
