@@ -304,6 +304,12 @@ Source and more info: [How to configure Spring Security Authorization](https://w
 ## 4. Database Authentication
 Spring Security provides support for username/password based authentication from a functioning Database layer connection.
 
+*For code implementation example(s) check:*
+[spring-security-jdbc](https://github.com/arsy786/spring-security-tutorials/spring-security-jdbc)
+or
+[spring-security-jpa](https://github.com/arsy786/spring-security-tutorials/spring-security-jpa)
+
+
 ### 4.1 JDBC
 
 1. Create User tables and test data in schema.sql and data.sql respectively
@@ -345,7 +351,7 @@ INSERT INTO authorities (username, authority)
   values ('user', 'ROLE_USER');
 
 INSERT INTO authorities (username, authority)
-  values ('admin', 'ROLE_USER');
+  values ('admin', 'ROLE_ADMIN');
 ```
 
 2. Configure Data Source properties in application.properties
@@ -402,8 +408,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                     + "where username = ?")
             .authoritiesByUsernameQuery("select username, authority "
                     + "from authorities "
-                    + "where username = ?")
-        ;
+                    + "where username = ?");
     }
  
     @Override
