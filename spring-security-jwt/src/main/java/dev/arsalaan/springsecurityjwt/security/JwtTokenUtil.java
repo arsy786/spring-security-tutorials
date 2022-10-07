@@ -62,5 +62,4 @@ public class JwtTokenUtil {
         return claims.getSubject();
     }
 
-
 }

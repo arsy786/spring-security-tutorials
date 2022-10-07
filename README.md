@@ -305,9 +305,9 @@ Source and more info: [How to configure Spring Security Authorization](https://w
 Spring Security provides support for username/password based authentication from a functioning Database layer connection.
 
 *For code implementation example(s) check:*
-[spring-security-jdbc](https://github.com/arsy786/spring-security-tutorials/spring-security-jdbc)
+[spring-security-jdbc](https://github.com/arsy786/spring-security-tutorials/tree/main/spring-security-jdbc)
 or
-[spring-security-jpa](https://github.com/arsy786/spring-security-tutorials/spring-security-jpa)
+[spring-security-jpa](https://github.com/arsy786/spring-security-tutorials/tree/main/spring-security-jpa)
 
 
 ### 4.1 JDBC
@@ -661,11 +661,10 @@ JSON Web Token (JWT) is widely used for securing REST APIs, in terms of securely
 
 ### 5.2 Method 1 - Filter-based JWT (No OAuth)
 *For code implementation example(s) check:*
-[spring-security-jwt](https://github.com/arsy786/spring-security-tutorials/spring-security-jwt)
+[spring-security-jwt](https://github.com/arsy786/spring-security-tutorials/tree/main/spring-security-jwt)
 
-
-- This is a custom implementation and requires a custom security filter with JWT utility class.
-- Useful for small applications.
+- This is a custom implementation and requires a custom security filter with a JWT utility class.
+- This method is useful for small applications.
 
 1. Dependencies
 
@@ -719,9 +718,25 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 app.jwt.secret=abcdefghijklmnOPQRSTUVWXYZ
 ```
 
-3. REST API's with Spring Data JPA
+- Adding some starter data
 
-- Code typical REST API.
+data.sq:
+``` properties
+INSERT INTO products(name, price) values ('iPhone 13 Pro', 1000)
+INSERT INTO products(name, price) values ('Microsoft Surface', 899)
+
+INSERT INTO roles(name) values ('ROLE_USER')
+INSERT INTO roles(name) values ('ROLE_ADMIN')
+
+INSERT INTO users(email, password) values ('arsalaan@gmail.com', '$2a$10$H2ER6pWkuHcQyGFUSw/BZ.nONiqgvEQQjMXQpg.2E1AmZ6b4SuvSm')
+-- password is password
+```
+
+
+
+3. Code REST API's with Spring Data JPA
+
+- Code typical REST API. In this example, we are creating a Products API.
 
 Product.java:
 ``` java
@@ -776,7 +791,7 @@ public class ProductController {
 
 NOTE: We would typically put business logic in Service layer, but for demonstration purposes, we have exposed the Repository directly in the Controller layer.
 <BR>
-NOTE: These endpoints are unsecured for early testing purposes. The SecurityConfig class at this stage of development will permit all requestswithout authentication, disable csrf and have a stateless session (as no session management needed). 
+NOTE: These endpoints are unsecured for early testing purposes. The SecurityConfig class at this stage of development will permit all requests without authentication, disable csrf and have a stateless session (as no session management needed). 
 
 Example of SecurityConfig at this stage of development:
 
@@ -795,338 +810,421 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-**Now the REST API has been developed, it is time to secure it using JWT**
+**Now the REST API has been developed, it is time to implement the Security!**
 
-4. User Entity, User Repository and UserDetailsService
+4. User & Role Entity, User & Role Repository and AddUserToRole DTO
 
-- Firstly, create the User entity class that represents a user of the application. This class is mapped to the users table in database.
-- Need to update the User class to implement the UserDetails interface as required by Spring Security.
+- Firstly, create the User entity class that represents a user of the application. This class is mapped to the users table in database and has a @ManyToMany mapping with Roles field.
 
 User.java:
 ``` java
+@Data
 @Entity
-@Table(name = "users")
+@Table(name = "users") // user is a reserved keyword therefore must rename to users
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-     
-    @Column(nullable = false, length = 50, unique = true)
+
+    @Column(nullable = false, unique = true)
+    @Email
     private String email;
-     
-    @Column(nullable = false, length = 64)
+
+    @Column(nullable = false)
     private String password;
- 
-    public User() { }
-     
-    public User(String email, String password) {
-        this.email = email;
-        this.password = password;
-    }
-     
-    // getters and setters are not shown for brevity
-    
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
+    private Set<Role> roles;
+
 }
 ```
 
-- Note that the length of the password field is 64 so it can store encoded password.
+Role.java:
+``` java
+@Getter
+@Setter
+@Entity
+@Table(name = "roles")
+public class Role {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+    @Column(length = 60)
+    private String name;
+
+}
+```
+
 - findByEmail method added to query DB for authentication.
 
 UserRepository.java:
 ``` java
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer> {
-    
     Optional<User> findByEmail(String email);
 }
 ```
 
-MyUserDetailsService.java:
+- findByName method added to query DB for assigning a Role to a User.
+
+RoleRepository.java:
 ``` java
-@Service
-public class MyUserDetailsService implements UserDetailsService {
-
-    private UserRepository userRepository;
-
-    public MyUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-       User user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
-               .orElseThrow(() ->
-                       new UsernameNotFoundException("User not found with username or email:" + usernameOrEmail));
-        return new org.springframework.security.core.userdetails.User(user.getEmail(),
-                user.getPassword(), mapRolesToAuthorities(user.getRoles()));
-    }
-
-    private Collection< ? extends GrantedAuthority> mapRolesToAuthorities(Set<Role> roles){
-        return roles.stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
-    }
+@Repository
+public interface RoleRepository extends JpaRepository<Role, Long> {
+    Optional<Role> findByName(String name);
 }
 ```
 
-5. JWT Token Utility
+- DTO for adding a Role to a User request.
 
-- Utility class that uses the jjwt library to generate an access token based on a given User object.
+UserRoleRequest.java:
+``` java
+@Data
+public class UserRoleRequest {
+private String email;
+private String roleName;
+}
+```
+
+5. Extend UserDetailsService
+
+- We override the loadUserByUsername() method to authentication the users.
+- Our implementation of UserDetailsService is where the authority (role) mapping takes place. Once the user has authenticated, our getAuthorities() method populates and returns a UserDetails object.
+
+JwtUserDetailsService.java:
+``` java
+@Service
+public class JwtUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override // loadUserByEmail* in this case
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
+    }
+
+    private Collection< ? extends GrantedAuthority> mapRolesToAuthorities(Set<Role> roles) {
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
+    }
+
+}
+```
+
+6. JWT Token Utility
+
+- Utility class that uses the jjwt library to generate an access token based on a given User object. This class also contains other methods related to JWT.
 
 ``` java
 @Component
 public class JwtTokenUtil {
-     
-    private static final long EXPIRE_DURATION = 24 * 60 * 60 * 1000; // 24 hour
-     
+
     @Value("${app.jwt.secret}")
     private String SECRET_KEY;
-     
-    public String generateAccessToken(User user) {
-        return Jwts.builder()
-                .setSubject(String.format("%s,%s", user.getId(), user.getEmail()))
-                .setIssuer("CodeJava")
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRE_DURATION))
+    private static final long EXPIRE_DURATION = 1 * 60 * 60 * 1000; // 1 hour
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenUtil.class); // can use @Slf4j instead
+
+    // generate token
+    public String generateToken(Authentication authentication) {
+
+        String username = authentication.getName();
+        Date currentDate = new Date();
+        Date expireDate = new Date(currentDate.getTime() + EXPIRE_DURATION);
+
+        String token = Jwts.builder()
+                .setSubject(username)
+                .setIssuer("DevArsalaan")
+                .setIssuedAt(currentDate)
+                .setExpiration(expireDate)
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
                 .compact();
-                 
+        return token;
     }
-     
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenUtil.class);
-     
-    public boolean validateAccessToken(String token) {
+
+    // validate JWT token
+    public boolean validateToken(String token) {
         try {
             Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
             return true;
         } catch (ExpiredJwtException ex) {
-            LOGGER.error("JWT expired", ex.getMessage());
+            LOGGER.error("Expired JWT token", ex.getMessage());
         } catch (IllegalArgumentException ex) {
             LOGGER.error("Token is null, empty or only whitespace", ex.getMessage());
         } catch (MalformedJwtException ex) {
-            LOGGER.error("JWT is invalid", ex);
+            LOGGER.error("Invalid JWT token", ex);
         } catch (UnsupportedJwtException ex) {
-            LOGGER.error("JWT is not supported", ex);
+            LOGGER.error("Unsupported JWT token", ex);
         } catch (SignatureException ex) {
-            LOGGER.error("Signature validation failed");
+            LOGGER.error("Invalid JWT signature");
         }
-         
         return false;
     }
-     
-    public String getSubject(String token) {
-        return parseClaims(token).getSubject();
-    }
-     
-    private Claims parseClaims(String token) {
-        return Jwts.parser()
+
+    // get username/email from the token
+    public String getUsernameFromToken(String token) {
+        Claims claims = Jwts.parser()
                 .setSigningKey(SECRET_KEY)
                 .parseClaimsJws(token)
                 .getBody();
+        return claims.getSubject();
     }
+    
 }
 ```
 
 - generateAccessToken() method creates a JSON Web Token with the following details: 
 Subject is combination of the user’s ID and email, separated by a comma.
-Issuer name is CodeJava
+Issuer name is DevArsalaan
 The token is issued at the current date and time
 The token should expire after 24 hours
 The token is signed using a secret key, which you can specify in the application.properties file or from system environment variable. And the signature algorithm is HMAC using SHA-512.
 - validateAccessToken(): used to verify a given JWT. It returns true if the JWT is verified, or false otherwise.
 - getSubject(): gets the value of the subject field of a given token. The subject contains User ID and email, which will be used to recreate a User object.
 
-6. Authentication Classes
-
-- Code a REST API end point that authenticates user and returns a JWT access token if the credential is valid.
-
-AuthRequest.java:
-``` java
-public class AuthRequest {
-    @NotNull @Email @Length(min = 5, max = 50)
-    private String email;
-     
-    @NotNull @Length(min = 5, max = 10)
-    private String password;
- 
-    // getters and setters are not shown...
-}
-```
-
-AuthResponse.java:
-``` java
-public class AuthResponse {
-    private String email;
-    private String accessToken;
- 
-    public AuthResponse() { }
-     
-    public AuthResponse(String email, String accessToken) {
-        this.email = email;
-        this.accessToken = accessToken;
-    }
- 
-    // getters and setters are not shown...
-}
-```
-
-AuthController.java:
-``` java
-@RestController
-public class AuthController {
-    @Autowired AuthenticationManager authManager;
-    @Autowired JwtTokenUtil jwtUtil;
-     
-    @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody @Valid AuthRequest request) {
-        try {
-            Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(), request.getPassword())
-            );
-             
-            User user = (User) authentication.getPrincipal();
-            String accessToken = jwtUtil.generateAccessToken(user);
-            AuthResponse response = new AuthResponse(user.getEmail(), accessToken);
-             
-            return ResponseEntity.ok().body(response);
-             
-        } catch (BadCredentialsException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-    }
-}
-```
-
-- Here, the URI is /auth/login and we use an authentication manager to authenticate the user. That’s why we need to expose a bean of type AuthenticationManager in the security config class.
-- In case the credential is invalid, a BradCredentialsException is thrown and the API returns HTTP status 401 (Unauthorized). If valid, it uses the JwtTokenUtil class to generate a new access token, which is then attached to the response object of type AuthResponse.
-
-
-7. JWT Token Filter
+7. JWT Token (Request) Filter
 
 - To access the secure REST APIs, the client must include an access token in the Authorization header of the request. So we need to insert our own filter in the middle of Spring Security filters chain, before the UsernameAndPasswordAuthenticationFilter, in order to check the Authorization header of each request.
 
-JwtTokenFilter.java:
+JwtRequestFilter.java:
 ``` java
 @Component
-public class JwtTokenFilter extends OncePerRequestFilter {
+public class JwtRequestFilter extends OncePerRequestFilter {
+
     @Autowired
-    private JwtTokenUtil jwtUtil;
- 
+    private JwtTokenUtil jwtTokenUtil;
+
+    @Autowired
+    private JwtUserDetailsService jwtUserDetailsService;
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
- 
-        if (!hasAuthorizationBearer(request)) {
-            filterChain.doFilter(request, response);
-            return;
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        // get JWT (token) from http request
+        String token = getJWTfromRequest(request);
+
+        // validate token
+        if(StringUtils.hasText(token) && jwtTokenUtil.validateToken(token)){
+
+            // get username from token
+            String email = jwtTokenUtil.getUsernameFromToken(token);
+
+            // load user associated with token
+            UserDetails userDetails = jwtUserDetailsService.loadUserByUsername(email);
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            // set spring security
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         }
- 
-        String token = getAccessToken(request);
- 
-        if (!jwtUtil.validateAccessToken(token)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
- 
-        setAuthenticationContext(token, request);
+
         filterChain.doFilter(request, response);
     }
- 
-    private boolean hasAuthorizationBearer(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
-        if (ObjectUtils.isEmpty(header) || !header.startsWith("Bearer")) {
-            return false;
+
+    // Bearer <accessToken>
+    private String getJWTfromRequest(HttpServletRequest request){
+
+        String bearerToken = request.getHeader("Authorization");
+
+        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")){
+            return bearerToken.substring(7, bearerToken.length());
         }
- 
-        return true;
+
+        return null;
     }
- 
-    private String getAccessToken(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
-        String token = header.split(" ")[1].trim();
-        return token;
-    }
- 
-    private void setAuthenticationContext(String token, HttpServletRequest request) {
-        UserDetails userDetails = getUserDetails(token);
- 
-        UsernamePasswordAuthenticationToken
-            authentication = new UsernamePasswordAuthenticationToken(userDetails, null, null);
- 
-        authentication.setDetails(
-                new WebAuthenticationDetailsSource().buildDetails(request));
- 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
- 
-    private UserDetails getUserDetails(String token) {
-        User userDetails = new User();
-        String[] jwtSubject = jwtUtil.getSubject(token).split(",");
- 
-        userDetails.setId(Integer.parseInt(jwtSubject[0]));
-        userDetails.setEmail(jwtSubject[1]);
- 
-        return userDetails;
-    }
+
 }
 ```
 
 - Class extends the OncePerRequestFilter class to guarantee a single execution per request.
-- When it comes into play, the doFilterInternal() method gets invoked. 
+- When it comes into play, the doFilterInternal() method gets invoked.
 
 Here’s how it works:
 - If the Authorization header of the request doesn’t contain a Bearer token, it continues the filter chain without updating authentication context.
 - Else, if the token is not verified, continue the filter chain without updating authentication context.
 - If the token is verified, update the authentication context with the user details ID and email. In other words, it tells Spring that the user is authenticated, and continue the downstream filters.
 
-8. Security Configuration
+8. Authentication Classes (Jwt Request & Response DTO's and Auth Controller)
+
+- Code a REST API end point that authenticates user (/login endpoint) and returns a JWT access token if the credential is valid.
+- AuthController also contains API's to get Users, save a User, save a Role, add a Role to a User and register a User. 
+
+AuthRequest.java:
+``` java
+@Data
+public class JwtRequest {
+    private String email;
+    private String password;
+}
+```
+
+AuthResponse.java:
+``` java
+@Getter
+@Setter
+@AllArgsConstructor
+public class JwtResponse {
+    private String email;
+    private String accessToken;
+}
+```
+
+AuthController.java:
+``` java
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
+    @GetMapping("/users")
+    public ResponseEntity<List<User>>getUsers() {
+        return ResponseEntity.ok().body(userRepository.findAll());
+    }
+
+    @PostMapping("/user/save")
+    public ResponseEntity<User>saveUser(@RequestBody User user) {
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/auth/user/save").toUriString());
+        return ResponseEntity.created(uri).body(userRepository.save(user));
+    }
+
+    @PostMapping("/role/save")
+    public ResponseEntity<Role>saveRole(@RequestBody Role role) {
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/role/save").toUriString());
+        return ResponseEntity.created(uri).body(roleRepository.save(role));
+    }
+
+    @PostMapping("/role/addtouser")
+    public ResponseEntity<?>addRoleToUser(@RequestBody UserRoleRequest addRoleToUserRequest) {
+        User user = userRepository.findByEmail(addRoleToUserRequest.getEmail()).get();
+        Role role = roleRepository.findByName(addRoleToUserRequest.getRoleName()).get();
+        user.getRoles().add(role);
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@RequestBody JwtRequest jwtRequest){
+
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getEmail(), jwtRequest.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // get token form jwtTokenUtil
+        String accessToken = jwtTokenUtil.generateToken(authentication);
+        JwtResponse jwtResponse = new JwtResponse(jwtRequest.getEmail(), accessToken);
+
+        return ResponseEntity.ok().body(jwtResponse);
+    }
+
+    @PostMapping("/register") // should use a registerDto instead of handling User entity in Controller layer
+    public ResponseEntity<?> registerUser(@RequestBody User registerUser){
+
+        // add check for email exists in DB
+        if(userRepository.findByEmail(registerUser.getEmail()).isPresent()){
+            return new ResponseEntity<>("Email is already taken!", HttpStatus.BAD_REQUEST);
+        }
+
+        // create and save new user object
+        User saveUser = new User();
+        saveUser.setEmail(registerUser.getEmail());
+        saveUser.setPassword(passwordEncoder.encode(registerUser.getPassword()));
+
+        // every new registered user has ROLE_USER by default
+        Role roles = roleRepository.findByName("ROLE_USER").get();
+        saveUser.setRoles(Collections.singleton(roles));
+
+        userRepository.save(saveUser);
+
+        return new ResponseEntity<>("User registered successfully", HttpStatus.OK);
+    }
+
+
+}
+```
+
+- Here, the URI is /auth/login and we use an authentication manager to authenticate the user. That’s why we need to expose a bean of type AuthenticationManager in the security config class.
+- In case the credential is invalid, a BradCredentialsException is thrown and the API returns HTTP status 401 (Unauthorized). If valid, it uses the JwtTokenUtil class to generate a new access token, which is then attached to the response object of type AuthResponse (JwtResponse).
+
+
+9. Security Configuration
+
+- Here is where we finally configure all the Security setings.
 
 With WebSecurityConfigurerAdapter:
 ``` java
+@Configuration
 @EnableWebSecurity
-public class ApplicationSecurity extends WebSecurityConfigurerAdapter {
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-	@Autowired private UserRepository userRepo;
-	
-	@Autowired private JwtTokenFilter jwtTokenFilter;
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
 
-	@Override
-	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(username -> userRepo.findByEmail(username)
-				.orElseThrow(() -> new UsernameNotFoundException("User " + username + " not found.")));
-	}
+    @Autowired
+    private JwtUserDetailsService jwtUserDetailsService;
 
-	@Bean
-	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable();
-		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-		
-		http.authorizeRequests()
-				.antMatchers("/auth/login").permitAll()
-				.anyRequest().authenticated();
-		
-        http.exceptionHandling()
-                .authenticationEntryPoint(
-                    (request, response, ex) -> {
-                        response.sendError(
-                            HttpServletResponse.SC_UNAUTHORIZED,
-                            ex.getMessage()
-                        );
-                    }
-                );
-        
-		http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
-	}
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .csrf().disable()
+                .exceptionHandling()
+                .authenticationEntryPoint((request, response, ex) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage())) // could store this in JwtAuthenticationEntryPoint implements AuthenticationEntryPoint class instead
+                .and()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authorizeRequests()
+//              .antMatchers(GET, "/products").hasAnyRole("USER", "ADMIN") added method level auth
+//              .antMatchers(POST, "/products").hasRole("ADMIN")
+                .antMatchers("/auth/**").permitAll()
+                .antMatchers("/h2-console/**").permitAll() // enabling h2-console access
+                .anyRequest().authenticated()
+                .and().headers().frameOptions().disable(); // enabling h2-console access
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
-	@Override
-	@Bean
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
-	}
+
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(jwtUserDetailsService)
+                .passwordEncoder(passwordEncoder());
+    }
+
+    @Override
+    @Bean
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
+
 }
 ```
 
@@ -1191,7 +1289,8 @@ public class ApplicationSecurity {
 Source and more info:
 <br>
 [Spring Security JWT Authentication Tutorial](https://www.codejava.net/frameworks/spring-boot/spring-security-jwt-authentication-tutorial)
-
+and
+[(YouTube) Spring Boot and Spring Security with JWT including Access and Refresh Tokens ](https://www.youtube.com/watch?v=VVn9OG9nfH0&t=399s)
 
 ## 6. OAuth
 ![OAuth2.0 Flow](OAuth-flow.jpg)
