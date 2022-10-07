@@ -1,10 +1,11 @@
 package dev.arsalaan.springsecurityjwt.controller;
 
-import dev.arsalaan.springsecurityjwt.dto.AuthRequest;
-import dev.arsalaan.springsecurityjwt.dto.AuthResponse;
-//import dev.arsalaan.springsecurityjwt.entity.Role;
+import dev.arsalaan.springsecurityjwt.dto.JwtRequest;
+import dev.arsalaan.springsecurityjwt.dto.JwtResponse;
+import dev.arsalaan.springsecurityjwt.dto.UserRoleRequest;
+import dev.arsalaan.springsecurityjwt.entity.Role;
 import dev.arsalaan.springsecurityjwt.entity.User;
-//import dev.arsalaan.springsecurityjwt.repository.RoleRepository;
+import dev.arsalaan.springsecurityjwt.repository.RoleRepository;
 import dev.arsalaan.springsecurityjwt.repository.UserRepository;
 import dev.arsalaan.springsecurityjwt.security.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,12 +16,17 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Collections;
+import java.util.List;
+
+// NOTE: Controller layer should only interact with Service layer, which in turn should contain business logic and interact with Repository layer.
+// But, for demonstration purposes, Repository layer exposed directly to Controller.
+// NOTE: Controller layer should consume (via endpoint) and respond (via service) with DTO's only.
+// But, for demonstration purposes, Controller layer interacts with entities at times here.
 
 @RestController
 @RequestMapping("/auth")
@@ -33,30 +39,54 @@ public class AuthController {
     private UserRepository userRepository;
 
     @Autowired
-    private JwtTokenUtil jwtTokenUtil;
+    private RoleRepository roleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-//    @Autowired
-//    private RoleRepository roleRepository;
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
 
-    @PostMapping("/login") // should use a loginDto instead for consistency
-    public ResponseEntity<?> authenticateUser(@RequestBody AuthRequest authRequest){
+    @GetMapping("/users")
+    public ResponseEntity<List<User>>getUsers() {
+        return ResponseEntity.ok().body(userRepository.findAll());
+    }
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword()));
+    @PostMapping("/user/save")
+    public ResponseEntity<User>saveUser(@RequestBody User user) {
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/auth/user/save").toUriString());
+        return ResponseEntity.created(uri).body(userRepository.save(user));
+    }
+
+    @PostMapping("/role/save")
+    public ResponseEntity<Role>saveRole(@RequestBody Role role) {
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/role/save").toUriString());
+        return ResponseEntity.created(uri).body(roleRepository.save(role));
+    }
+
+    @PostMapping("/role/addtouser")
+    public ResponseEntity<?>addRoleToUser(@RequestBody UserRoleRequest addRoleToUserRequest) {
+        User user = userRepository.findByEmail(addRoleToUserRequest.getEmail()).get();
+        Role role = roleRepository.findByName(addRoleToUserRequest.getRoleName()).get();
+        user.getRoles().add(role);
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@RequestBody JwtRequest jwtRequest){
+
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getEmail(), jwtRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-//        User user = (User) authentication.getPrincipal();
 
         // get token form jwtTokenUtil
         String accessToken = jwtTokenUtil.generateToken(authentication);
-        AuthResponse authResponse = new AuthResponse(authRequest.getEmail(), accessToken);
+        JwtResponse jwtResponse = new JwtResponse(jwtRequest.getEmail(), accessToken);
 
-        return ResponseEntity.ok().body(authResponse);
+        return ResponseEntity.ok().body(jwtResponse);
     }
 
-    @PostMapping("/register") // should use a registerDto instead of handling user entity
+    @PostMapping("/register") // should use a registerDto instead of handling User entity in Controller layer
     public ResponseEntity<?> registerUser(@RequestBody User registerUser){
 
         // add check for email exists in DB
@@ -69,15 +99,13 @@ public class AuthController {
         saveUser.setEmail(registerUser.getEmail());
         saveUser.setPassword(passwordEncoder.encode(registerUser.getPassword()));
 
-//        Role roles = roleRepository.findByName("ROLE_ADMIN").get();
-//        user.setRoles(Collections.singleton(roles));
-
-        saveUser.setRoles("ROLE_USER");
+        // every new registered user has ROLE_USER by default
+        Role roles = roleRepository.findByName("ROLE_USER").get();
+        saveUser.setRoles(Collections.singleton(roles));
 
         userRepository.save(saveUser);
 
         return new ResponseEntity<>("User registered successfully", HttpStatus.OK);
-
     }
 
 

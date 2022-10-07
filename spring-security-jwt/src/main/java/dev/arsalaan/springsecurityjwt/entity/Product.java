@@ -9,7 +9,7 @@ import javax.persistence.*;
 @ToString // Defines a meaningful toString implementation of this class
 @AllArgsConstructor // Defines all arguments constructor
 @NoArgsConstructor // Defines the default constructor
-@Entity // Marks this class as an Entity
+@Entity // Marks this class as an entity
 @Table(name = "products") // Can change entity name in table
 public class Product {
 

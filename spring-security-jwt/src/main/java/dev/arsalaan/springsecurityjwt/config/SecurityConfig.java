@@ -1,12 +1,13 @@
 package dev.arsalaan.springsecurityjwt.config;
 
-import dev.arsalaan.springsecurityjwt.repository.UserRepository;
 import dev.arsalaan.springsecurityjwt.security.JwtRequestFilter;
 import dev.arsalaan.springsecurityjwt.security.JwtUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -17,7 +18,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import javax.servlet.http.HttpServletResponse;
 
+@Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
@@ -36,17 +39,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .csrf().disable()
                 .exceptionHandling()
-                .authenticationEntryPoint((request, response, ex) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage()))
+                .authenticationEntryPoint((request, response, ex) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage())) // could store this in JwtAuthenticationEntryPoint implements AuthenticationEntryPoint class instead
                 .and()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
+//              .antMatchers(GET, "/products").hasAnyRole("USER", "ADMIN") added method level auth
+//              .antMatchers(POST, "/products").hasRole("ADMIN")
                 .antMatchers("/auth/**").permitAll()
-                .antMatchers("/h2-console/**").permitAll()
-                .anyRequest().authenticated();
+                .antMatchers("/h2-console/**").permitAll() // enabling h2-console access
+                .anyRequest().authenticated()
+                .and().headers().frameOptions().disable(); // enabling h2-console access
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-//        http.csrf(csrf -> csrf.ignoringAntMatchers("/h2-console/**"));
+
+
     }
 
     @Override

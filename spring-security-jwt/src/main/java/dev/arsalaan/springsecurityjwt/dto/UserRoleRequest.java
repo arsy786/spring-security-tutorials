@@ -1,11 +1,9 @@
 package dev.arsalaan.springsecurityjwt.dto;
 
-
 import lombok.Data;
 
-
 @Data
-public class AuthRequest {
+public class UserRoleRequest {
     private String email;
-    private String password;
+    private String roleName;
 }

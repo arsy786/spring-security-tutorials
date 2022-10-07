@@ -15,7 +15,7 @@ public class JwtTokenUtil {
     @Value("${app.jwt.secret}")
     private String SECRET_KEY;
     private static final long EXPIRE_DURATION = 1 * 60 * 60 * 1000; // 1 hour
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenUtil.class); // can use @Slf4j instead
 
     // generate token
     public String generateToken(Authentication authentication) {
@@ -26,7 +26,7 @@ public class JwtTokenUtil {
 
         String token = Jwts.builder()
                 .setSubject(username)
-                .setIssuer("CodeJava")
+                .setIssuer("DevArsalaan")
                 .setIssuedAt(currentDate)
                 .setExpiration(expireDate)
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
