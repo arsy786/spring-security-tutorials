@@ -7,12 +7,14 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="spring-security-jdbc" />
         <module name="spring-security-jpa" />
+        <module name="spring-security-jdbc" />
+        <module name="jwt-oauth2-demo" />
         <module name="spring-security-jwt" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="jwt-oauth2-demo" target="11" />
       <module name="spring-security-jdbc" target="11" />
       <module name="spring-security-jpa" target="11" />
       <module name="spring-security-jwt" target="11" />
@@ -20,6 +22,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="jwt-oauth2-demo" options="-parameters" />
       <module name="spring-security-jdbc" options="-parameters" />
       <module name="spring-security-jpa" options="-parameters" />
       <module name="spring-security-jwt" options="-parameters" />

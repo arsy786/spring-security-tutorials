@@ -1304,7 +1304,10 @@ and
 - The client software can be authorized to access the resources on behalf of end user using access token.
 
 
-### 6.2 Method 2 - OAuth2 JWT
+### 6.2 Method 2 - OAuth2 JWT 
+*For code implementation example(s) check:*
+[jwt-oauth2-demo](https://github.com/arsy786/spring-security-tutorials/tree/main/jwt-oauth2-demo)
+
 - This has built-in functionality and requires a custom JWT authentication server.
 - JWT is a mechanism for transferring data, NOT for securing it.
 - A JWT is only secure when it's used in tandem with encryption & transport security methodologies.
@@ -1314,12 +1317,22 @@ and
 
 This is handy in circumstances where an application has delegated its authority management to an authorization server (for example, Okta or Spring Authorization Server). This authorization server can be consulted by resource servers to authorize requests.
 
-In this tutorial, you will use self-signed JWTs which will eliminate the need to introduce an authorization server. While this works for this example, your application requirements might be different so when is it no longer acceptable to use self-signed JWTs?
+It is more popular in case microservices architecture where the single authentication server can be used for multiple resources server.
+
+- In this tutorial, you will use self-signed JWTs which will eliminate the need to introduce an authorization server. While this works for this example, your application requirements might be different so when is it no longer acceptable to use self-signed JWTs?
 
 When you reach the point where the trade-offs for self-signed JWTs are not acceptable. An example might be the moment you want to introduce refresh tokens.
 I'd add that a distinct authorization server makes more sense when you have more than one service or you want to be able to harden security (isolating something as critical as authentication provides value because the attack surface is reduced).
 
+- A JWT can be encrypted using either a symmetric key (shared secret) or asymmetric keys (the private key of a private-public pair).
+- There are pros/cons to each, but it is generally recommended that you use Asymmetric keys so that is the approach you will take here.
 
-
+1. Dependencies
+2. REST API
+3. SecurityConfig part 1 (SecurityFilterChain)
+4. RSA Keys generation/record/application.properties
+5. SecurityConfig part 2 (jwtEncoder, jwtDecoder, AuthenticationManager, UserDetailsService)
+6. TokenUtil class (generateToken method)
+7. AuthController
 
 
