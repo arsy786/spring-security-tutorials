@@ -19,7 +19,6 @@ public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
 
-
     public AuthController(JwtTokenUtil jwtTokenUtil, AuthenticationManager authenticationManager) {
         this.jwtTokenUtil = jwtTokenUtil;
         this.authenticationManager = authenticationManager;
@@ -30,6 +29,5 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLogin.getUsername(), userLogin.getPassword()));
         return jwtTokenUtil.generateToken(authentication);
     }
-
 
 }

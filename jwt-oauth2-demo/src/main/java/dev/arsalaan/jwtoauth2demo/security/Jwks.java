@@ -20,6 +20,4 @@ public class Jwks {
                 .keyID(UUID.randomUUID().toString())
                 .build();
     }
-
-
 }

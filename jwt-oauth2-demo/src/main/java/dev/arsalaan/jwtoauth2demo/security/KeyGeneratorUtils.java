@@ -2,7 +2,6 @@ package dev.arsalaan.jwtoauth2demo.security;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 
 public class KeyGeneratorUtils {
 
@@ -17,6 +16,7 @@ public class KeyGeneratorUtils {
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+
         return keyPair;
     }
 

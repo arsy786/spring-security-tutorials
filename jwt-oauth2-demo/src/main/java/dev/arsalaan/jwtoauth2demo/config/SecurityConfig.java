@@ -39,20 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 @EnableWebSecurity
 public class SecurityConfig {
 
-//    @Autowired
-//    private UserRepository userRepository;
     private RSAKey rsaKey;
-
-//    @Bean
-//    public UserDetailsService userDetailsService() {
-//        return new UserDetailsService() {
-//            @Override
-//            public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-//                return userRepository.findByUsername(username)
-//                        .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-//            }
-//        };
-//    }
 
     @Bean
     public AuthenticationManager authenticationManager(JwtUserDetailsService jwtUserDetailsService) throws Exception {
@@ -68,9 +55,8 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable);
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeRequests()
-                .mvcMatchers("/token").permitAll()
+                .antMatchers("/token", "/error", "/starter").permitAll()
                 .antMatchers("/h2-console/**").permitAll()
-                .antMatchers("/starter").permitAll()
                 .anyRequest().authenticated();
         http.headers().frameOptions().disable();
         http.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);
