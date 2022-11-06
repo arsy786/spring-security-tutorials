@@ -1328,11 +1328,33 @@ I'd add that a distinct authorization server makes more sense when you have more
 - There are pros/cons to each, but it is generally recommended that you use Asymmetric keys so that is the approach you will take here.
 
 1. Dependencies
+
+- Spring Web, OAuth2 Resource Server, Spring Config Processor, Spring Data JPA, H2
+- Spring Security is included in OAuth2 Resource Server
+
 2. REST API
+
+- User, Role, Repositories, Home Controller
+
 3. SecurityConfig part 1 (SecurityFilterChain)
-4. RSA Keys generation/record/application.properties
+
+
+
+4. RSA Keys generation
+
+- Jwks & KeyGeneratorUtils automate the RSA keypair generation
+- can specify where the keys are stored in application.properties
+
 5. SecurityConfig part 2 (jwtEncoder, jwtDecoder, AuthenticationManager, UserDetailsService)
+
+- JwtUserDetailsService
+
 6. TokenUtil class (generateToken method)
+
+- Contains token methods
+
 7. AuthController
+
+- Contains endpoints related to authentication + authorisation
 
 
