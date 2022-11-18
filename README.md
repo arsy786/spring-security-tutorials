@@ -66,10 +66,10 @@ Link to: [Spring Security (Spring)](https://spring.io/projects/spring-security)
 4. (Granted) Authority - Permissions/access (fine-grained)
 5. Role - Group of authorities (coarse-grained)
 
-Link to: [Five Spring Security (YouTube/JavaBrains)](https://www.youtube.com/watch?v=I0poT4UxFxE&list=PLqq-6Pq4lTTYTEooakHchTGglSvkZAjnE&index=2)
+Link to: [Five Spring Security Concepts (YouTube/JavaBrains)](https://www.youtube.com/watch?v=I0poT4UxFxE&list=PLqq-6Pq4lTTYTEooakHchTGglSvkZAjnE&index=2)
 
 ### 1.3 Adding SS to SB app
-Simple add the spring-boot-starter-security dependency to pom.xml. 
+Simply add the spring-boot-starter-security dependency to pom.xml. 
 The default behaviour of SS once added to SB project:
 
 1. Adds mandatory authentication for URLs
@@ -211,7 +211,7 @@ public class HomeController {
         return("Welcome User");
     }
     
-    @GetMapping("/")
+    @GetMapping("/admin")
     public String admin() {
         return("Welcome Admin");
     }
@@ -227,7 +227,7 @@ We want:
 | **/user** | USER and ADMIN |
 | **/admin** | ADMIN |
 
-- To do this, need to use HttpSecurity. This object lets us configure paths and their access restrictions.
+- To do this, we need to use HttpSecurity. This object lets us configure paths and their access restrictions.
 
 With WebSecurityConfigurerAdapter:
 ``` java
@@ -268,7 +268,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 - If you have many endpoints with the same path and authorization requirement, can use /** to include all paths at the current level, as well as those nested below it.
 - .hasRole() if endpoint only allows 1 specific role.
 - .hasAnyRole() if endpoint allows multiple role access.
-- .permitAll() if endpoint allows any (or no) role.
+- .permitAll() if endpoint allows both anonymous and authenticated access.
 - .and() to end chaining
 - .formLogin() to set authentication method as form-based.
 
@@ -314,7 +314,7 @@ or
 
 ### 4.1 JDBC
 
-1. Create User tables and test data in schema.sql and data.sql respectively
+<ins>1. Create User tables and test data in schema.sql and data.sql respectively
 
 - JDBC has a default schema in the format: id, username, password, role, enabled.
 - If you are using the above default schema, you do NOT need to add a custom schema.sql, and can simply use .withDefaultSchema() method in Step 4 (Configure JDBC Authentication details).
@@ -356,7 +356,7 @@ INSERT INTO authorities (username, authority)
   values ('admin', 'ROLE_ADMIN');
 ```
 
-2. Configure Data Source properties in application.properties
+<ins>2. Configure Data Source properties in application.properties
 
 - Specify database connection information in the application.properties file.
 - Update the URL, username and password according to your MySQL (or other) database.
@@ -368,7 +368,7 @@ spring.datasource.username=root
 spring.datasource.password=password
 ```
 
-3. Add dependencies to pom.xml
+<ins>3. Add dependencies to pom.xml
 
 - To use Spring Security APIs for the project and to use JDBC with Spring Boot and MySQL:
 
@@ -389,7 +389,7 @@ pom.xml:
 </dependency>
 ```
 
-4. Configure JDBC Authentication details
+<ins>4. Configure JDBC Authentication details
 - To use Spring Security with form-based authentication and JDBC:
 
 SecurityConfig.java:
@@ -432,7 +432,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 NOTE: If using default schema, .usersByUsernameQuery and .authoritiesByUsernameQuery is not required. Although default schema has been used in this example, these two methods have been added still, so you can easily adapt the code if the schema does become custom. 
 
-Link to: [How to setup JDBC authentication with Spring Security from scratch](https://www.youtube.com/watch?v=LKvrFltAgCQ&list=PLqq-6Pq4lTTYTEooakHchTGglSvkZAjnE&index=7)
+Link to: [How to setup JDBC authentication with Spring Security from scratch (YouTube/JavaBrains)](https://www.youtube.com/watch?v=LKvrFltAgCQ&list=PLqq-6Pq4lTTYTEooakHchTGglSvkZAjnE&index=7)
 
 ### 4.2 JPA
 - JDBC and LDAP come out of the box as Authentication providers for Spring Security. JPA however does not.
@@ -440,7 +440,7 @@ Link to: [How to setup JDBC authentication with Spring Security from scratch](ht
 
 ![Spring Security JPA Authentication](ss-jpa-authentication.png)
 
-1. Dependencies
+<ins>1. Dependencies
 
 - For Spring Data JPA and Hibernate, Spring Security APIs and MySQL JDBC Driver:
 
@@ -460,7 +460,7 @@ Link to: [How to setup JDBC authentication with Spring Security from scratch](ht
 </dependency>
 ```
 
-2. Configure Data Source properties
+<ins>2. Configure Data Source properties
 
 - Need to specify the database connection information in the application.properties files as follows:
 
@@ -476,9 +476,9 @@ spring.jpa.defer-datasource-initialization=true
 spring.jpa.hibernate.ddl-auto=create-drop
 ```
 
-3. User class
+<ins>3. User class
 
-- To use Spring Data JPA, we need to code a model class that maps with the users table in the database.
+- To use Spring Data JPA, we need to add a model class that maps with the users table in the database.
 
 ``` java
 @Entity
@@ -499,9 +499,9 @@ public class User {
 }
 ```
 
-4. UserRepository class
+<ins>4. UserRepository class
 
-- Extend JpaRepository and add findByUsername() method
+- Extend JpaRepository and add findByUsername() method:
 
 ``` java
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -510,7 +510,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 }
 ```
 
-5. Implement UserDetails
+<ins>5. Implement UserDetails
 
 - This class wraps an instance of User class, which is injected via constructor. And we override methods defined by the UserDetails interface, to be used by Spring Security in the authentication process.
 
@@ -565,7 +565,7 @@ public class MyUserDetails implements UserDetails {
 }
 ```
 
-6. Implement UserDetailsService
+<ins>6. Implement UserDetailsService
 
 - This class makes use of an implementation of UserRepository, which will be created and injected by Spring Data JPA. Here, we override the loadUserByUsername() method to authentication the users.
 
@@ -589,7 +589,7 @@ public class MyUserDetailsService implements UserDetailsService {
 }
 ```
 
-7. Configure authentication provider + HTTP Security
+<ins>7. Configure authentication provider + HTTP Security
 
 - Finally, we connect all the pieces together by coding a Spring Security configuration class WebSecurityConfig with the following code.
 
@@ -634,9 +634,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-NOTE: To use Spring security with Spring Data JPA and Hibernate, we need to supply a DaoAuthenticationProvider which requires UserDetailsService and PasswordEncoder.
-
-
+NOTE: To use Spring Security with Spring Data JPA and Hibernate, we need to supply a DaoAuthenticationProvider which requires UserDetailsService and PasswordEncoder.
 
 Link to: [Spring Boot Security Authentication with JPA, Hibernate and MySQL (CodeJava)](https://www.codejava.net/frameworks/spring-boot/spring-boot-security-authentication-with-jpa-hibernate-and-mysql)
 <br>
@@ -644,34 +642,53 @@ Link to: [Spring Security JPA Authentication in Spring Boot (YouTube/DanVega)](h
 <br>
 
 ### 4.3 LDAP Server
-TBC
+N/A
 
 ## 5. JWT
+
+NOTE: spring-security-jwt has been deprecated and refers developers to Spring Security OAuth2 (part of Spring Security 5.2.x).
+Currently, there is no official documentation examples of using JWT **without** at least having an issuer service to distribute the signing key.
+
 ![JWT Flow](jwt-flow-2.png)
 ![JWT Structure](jwt-structure.png)
-NOTE: spring-security-jwt has been deprecated and refers developers to Spring Security OAuth2 (part of Spring Security 5.2.x). No official documentation examples of using JWT **without** at least having an issuer service to distribute the signing key.
 
 ### 5.1 What is it?
-JSON Web Token (JWT) is widely used for securing REST APIs, in terms of securely transmitting tokens along with HTTP requests, which facilitates stateless and secure communication between REST clients and API backend.
+JSON Web Token (JWT) is widely used for securing REST APIs. It is used for securely transmitting tokens along with HTTP requests, 
+which facilitates stateless and secure communication between REST clients and API backend.
  
-- JWT is a JSON based security token for API Authentication.
+- JWT is a JSON based security token for API Authorization.
+- JWTs can be signed using a secret (with HMAC algorithm) or a public/private key pair using RSA.
+- Once a user is logged in, each subsequent request will require the JWT, allowing the user to access routes, services, and resources that are permitted with that token.
+
+
 - JWT can contain unlimited amount of data (unlike cookies).
 - JWT can be seen, but not modifiable once sent.
 - JWT is just serialized, NOT encrypted.
-- JWTs can be signed using a secret (with HMAC algorithm) or a public/private key pair using RSA.
-- JWT structure and flow shown in above images.
+- JWT is a mechanism for transferring data, NOT for securing it (only secure when used in tandem with encryption & transport security methodologies).
+- JWT flow and structure shown in above images.
 
 Link to: [What Is JWT and Why Should You Use JWT (YouTube/WebDevSimplified)](https://www.youtube.com/watch?v=7Q17ubqLfaM)
 <br>
 
-### 5.2 Method 1 - Filter-based JWT (No OAuth) (Secret)
+### 5.2 Method 1 - Filter-based JWT
 *For code implementation example(s) check:*
 [spring-security-jwt](https://github.com/arsy786/spring-security-tutorials/tree/main/spring-security-jwt)
 
-- This is a custom implementation and requires a custom security filter with a JWT utility class.
-- This method is useful for small applications.
 
-1. Dependencies
+This method adopts:
+
+- Custom Filter
+- Secret Key (Symmetric Key)
+- Self-signed JWT's
+
+This method is useful for small applications.
+
+NOTE: No resource server used, custom implementation that requires the addition of a new custom security filter for JWT validation (via a JWT utility class) used instead.
+<br>
+NOTE: No authorization server used, self-signed JWT's used instead.
+
+
+<ins>1. Dependencies
 
 pom.xml:
 ``` xml
@@ -703,7 +720,7 @@ pom.xml:
 </dependency>
 ```
 
-2. Data Source Properties
+<ins>2. Data Source Properties
 
 - Note that you must create a new database schema named productsdb, and update username and password according to your MySQL configuration.
 
@@ -735,7 +752,7 @@ INSERT INTO users(email, password) values ('arsalaan@gmail.com', '$2a$10$H2ER6pW
 -- password is password
 ```
 
-3. Code REST API's with Spring Data JPA
+<ins>3. Code REST API's with Spring Data JPA
 
 - Code typical REST API. In this example, we are creating a Products API.
 
@@ -794,7 +811,7 @@ NOTE: We would typically put business logic in Service layer, but for demonstrat
 <br>
 NOTE: These endpoints are unsecured for early testing purposes. The SecurityConfig class at this stage of development will permit all requests without authentication, disable csrf and have a stateless session (as no session management needed). 
 
-Example of SecurityConfig at this stage of development:
+- Example of SecurityConfig at this stage of development:
 
 SecurityConfig.java:
 ``` java
@@ -813,9 +830,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 **Now the REST API has been developed, it is time to implement the Security!**
 
-4. User & Role Entity, User & Role Repository and AddUserToRole DTO
+<ins>4. User & Role Entity, User & Role Repository and AddUserToRole DTO
 
-- Firstly, create the User entity class that represents a user of the application. This class is mapped to the users table in database and has a @ManyToMany mapping with Roles field.
+- Firstly, create the User entity class that represents a user of the application. 
+This class is mapped to the users table in database and has a @ManyToMany mapping with the Roles field.
 
 User.java:
 ``` java
@@ -882,7 +900,7 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
 }
 ```
 
-- DTO for adding a Role to a User request.
+- DTO for adding a Role to a User HTTP Request.
 
 UserRoleRequest.java:
 ``` java
@@ -893,7 +911,7 @@ public class UserRoleRequest {
 }
 ```
 
-5. Extend UserDetailsService
+<ins>5. Extend UserDetailsService
 
 - We override the loadUserByUsername() method to authentication the users.
 - Our implementation of UserDetailsService is where the authority (role) mapping takes place. Once the user has authenticated, our getAuthorities() method populates and returns a UserDetails object.
@@ -923,7 +941,7 @@ public class JwtUserDetailsService implements UserDetailsService {
 }
 ```
 
-6. JWT Token Utility
+<ins>6. JWT Token Utility
 
 - Utility class that uses the jjwt library to generate an access token based on a given User object. This class also contains other methods related to JWT.
 
@@ -985,15 +1003,16 @@ public class JwtTokenUtil {
 ```
 
 - generateAccessToken() method creates a JSON Web Token with the following details: 
-Subject is combination of the user’s ID and email, separated by a comma.
-Issuer name is DevArsalaan.
-The token is issued at the current date and time.
-The token should expire after 24 hours.
-The token is signed using a secret key, which you can specify in the application.properties file or from system environment variable. And the signature algorithm is HMAC using SHA-512.
+  - Subject is a combination of the user’s ID and email, separated by a comma. 
+  - Issuer name is DevArsalaan. 
+  - The token is issued at the current date and time. 
+  - The token should expire after 24 hours. 
+  - The token is signed using a secret key, which you can specify in the application.properties file or from system environment variable. 
+  - And the signature algorithm is HMAC using SHA-512.
 - validateAccessToken(): used to verify a given JWT. It returns true if the JWT is verified, or false otherwise.
 - getSubject(): gets the value of the subject field of a given token. The subject contains User ID and email, which will be used to recreate a User object.
 
-7. JWT Token (Request) Filter
+<ins>7. JWT Token (Request) Filter
 
 - To access the secure REST APIs, the client must include an access token in the Authorization header of the request. So we need to insert our own filter in the middle of Spring Security filters chain, before the UsernameAndPasswordAuthenticationFilter, in order to check the Authorization header of each request.
 
@@ -1055,10 +1074,10 @@ Here’s how it works:
 - Else, if the token is not verified, continue the filter chain without updating authentication context.
 - If the token is verified, update the authentication context with the user details ID and email. In other words, it tells Spring that the user is authenticated, and continue the downstream filters.
 
-8. Authentication Classes (Jwt Request & Response DTO's and Auth Controller)
+<ins>8. Authentication Classes (Jwt Request & Response DTO's and Auth Controller)
 
-- Code a REST API end point that authenticates user (/login endpoint) and returns a JWT access token if the credential is valid.
-- AuthController also contains API's to get Users, save a User, save a Role, add a Role to a User and register a User. 
+- Code a REST API end point that authenticates user (/login endpoint) and returns a JWT access token if the credentials are valid.
+- AuthController also contains API's to: get Users, save a User, save a Role, add a Role to a User and register a User. 
 
 AuthRequest.java:
 ``` java
@@ -1170,7 +1189,7 @@ public class AuthController {
 - In case the credential is invalid, a BradCredentialsException is thrown and the API returns HTTP status 401 (Unauthorized). If valid, it uses the JwtTokenUtil class to generate a new access token, which is then attached to the response object of type AuthResponse (JwtResponse).
 
 
-9. Security Configuration
+<ins>9. Security Configuration
 
 - Here is where we finally configure all the Security setings.
 
@@ -1302,37 +1321,89 @@ Link to: [Spring Boot and Spring Security with JWT including Access and Refresh 
 - OAuth uses both server-side & client-side storage.
 - It has a server that keeps track of tokens.
 - OAuth answers the dilemma of: How can I let an application access (some of) my data… without giving it my password?
-- Instead of, “sign-in with email and password” we get: sign-in with Facebook or Google or LinkedIn or Twitter etc.
-- The client software can be authorized to access the resources on behalf of end user using access token.
+- Instead of, “sign-in with email and password” we get: "sign-in with Facebook" (or Google, LinkedIn, Twitter etc.)
+- The client software can be authorized to access the resources on behalf of end user using an access token.
+
+<ins>Wha is an Authorization Server?
+
+At its core, an authorization server is simply an engine for minting OpenID Connect or OAuth 2.0 tokens. 
+An authorization server is also used to apply access policies. 
+Each authorization server has a unique issuer URI and its own signing key for tokens to keep a proper boundary between security domains.
+
+A few examples for such authorization servers/services are: Asgardeo, Keycloak, OneLogin, Auth0 and Okta.
+
+<ins>What is a Resource Server?
+
+In the context of OAuth 2.0, a resource server is an application that protects resources via OAuth tokens.
+Basically, it is any application (usually an API) with functions that requires OAuth authenticated access.
+These tokens are issued by an authorization server, typically to a client application. The job of the resource server is to validate the token before serving a resource to the client.
+
+A token's validity is determined by several things:
+- Did this token come from the configured authorization server?
+- Is it unexpired?
+- Is this resource server its intended audience?
+- Does the token have the required authority to access the requested resource?
 
 Link to: [What is OAuth really all about - OAuth tutorial (YouTube/JavaBrains)](https://www.youtube.com/watch?v=t4-416mg6iU)
 <br>
 
-### 6.2 Method 2 - OAuth2 JWT (RSA Keys)
+### 6.2 Method 2 - OAuth2 JWT
 *For code implementation example(s) check:*
 [jwt-oauth2-demo](https://github.com/arsy786/spring-security-tutorials/tree/main/jwt-oauth2-demo)
 
+This method adopts:
+
+- OAuth2.0 Resource Server 
+- RSA Public/Private Key Pair (Asymmetric Keys)
+- Self-signed JWT's
+
+This method is useful for increasing the security of JWT's. It can also be considered easier to implement, as this method does not require
+the introduction of a custom filter.
+
+NOTE: No authorization server used, self-signed JWT's used instead.
+
+<ins>What is so different about this Method?
+
+The previous method involved writing a custom filter chain and pulling in a 3rd party library for encoding and decoding JWTs.
+However, we can make use of Spring Security's built-in JWT validation support for using OAuth2 Resource Server.
+Therefore, instead of introducing a custom filter, we can make use of the OAuth2 resource server to implement JWT authentication.
+
+Furthermore, the type of key used for the JWT signature in this method differs.
+A JWT can be encrypted using either a symmetric key (shared secret) or asymmetric keys (the private key of a private-public pair).
+
+In symmetric encryption, the message is encrypted and decrypted using the same key. In asymmetric encryption, the message is encrypted using the public key, and the private key is used to decrypt the message.
+
+There are pros/cons to each, but it is generally recommended that you use Asymmetric keys.
+
+<ins>What is similar between both Methods?
+
+They both adopt self-signed JWTs which eliminates the need to introduce an authorization server.
+Instead of using an authorization server to issue JWTs, I decided to write a ‘/login’ endpoint which issues a JWT upon successful login. 
+
+<ins>Authorization Server vs. self-signed JWT's
+
+While using self-signed JWT's works for this example, your application requirements may differ, so... 
+when is it no longer acceptable to use self-signed JWTs?
+
+When you reach the point where the trade-offs for self-signed JWTs are no longer acceptable. 
+
+For example, you may want to use a distinct authorization server if you want to:
+- introduce refresh tokens
+- have more than one service - authorization server should be hosted and run as a separate service.
+- harden security - isolating something as critical as authentication provides value because the attack surface is reduced.
+
+It is more popular in the case of microservices architecture where the single authentication server can be used for multiple resource servers.
+
+<ins>Support Material
+
 Link to: [Spring Boot Spring Security JWT (YouTube/DanVega)](https://www.youtube.com/watch?v=UaB-0e76LdQ)
+<br>
+Link to: [JWT Authentication With Spring Boot’s Inbuilt OAuth2 Resource Server (Medium/ImeshaSudasingha)](https://12ft.io/proxy?ref=&q=https://medium.com/swlh/stateless-jwt-authentication-with-spring-boot-a-better-approach-1f5dbae6c30f)
+<br>
+Link to: [JWT Authentication with OAuth2 Resource Server and an external Authorization Server (Medium/ImeshaSudasingha)](https://12ft.io/proxy?q=https%3A%2F%2Fmedium.com%2Fgeekculture%2Fjwt-authentication-with-oauth2-resource-server-and-an-external-authorization-server-2b8fd1524fc8)
 
-- This has built-in functionality and requires a custom JWT authentication server.
-- JWT is a mechanism for transferring data, NOT for securing it.
-- A JWT is only secure when it's used in tandem with encryption & transport security methodologies.
-- If one is creating a bearer token... why not make use of the built-in functionality of OAuth schema designed with built-in security functionality to specifically work with JWT's?
-- Useful for increasing security of JWT.
 
-This is handy in circumstances where an application has delegated its authority management to an authorization server (for example, Okta or Spring Authorization Server). This authorization server can be consulted by resource servers to authorize requests.
-
-It is more popular in the case of microservices architecture where the single authentication server can be used for multiple resources server.
-
-- In this tutorial, you will use self-signed JWTs which will eliminate the need to introduce an authorization server. While this works for this example, your application requirements might be different so when is it no longer acceptable to use self-signed JWTs?
-
-When you reach the point where the trade-offs for self-signed JWTs are no longer acceptable. An example might be the moment you want to introduce refresh tokens.
-I'd add that a distinct authorization server makes more sense when you have more than one service or you want to be able to harden security (isolating something as critical as authentication provides value because the attack surface is reduced).
-
-- A JWT can be encrypted using either a symmetric key (shared secret) or asymmetric keys (the private key of a private-public pair).
-- There are pros/cons to each, but it is generally recommended that you use Asymmetric keys so that is the approach you will take here.
-
-1. Dependencies
+<ins>1. Dependencies
 
 - Spring Web, OAuth2 Resource Server, Spring Config Processor, Spring Data JPA, H2
 - Spring Security is included in OAuth2 Resource Server
@@ -1372,7 +1443,7 @@ pom.xml:
 </dependency>
 ```
 
-2. REST API
+<ins>2. REST API
 
 - User, Role, Repositories, HomeController
 
@@ -1420,7 +1491,7 @@ public class Role {
 }
 ```
 
-UserRepository.java:
+<ins>UserRepository.java:
 ``` java
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -1466,7 +1537,7 @@ public class HomeController {
 }
 ```
 
-3. SecurityConfig part 1 (SecurityFilterChain)
+<ins>3. SecurityConfig part 1 (SecurityFilterChain)
 
 SecurityConfig.java:
 ``` java
@@ -1502,7 +1573,7 @@ public class SecurityConfig {
 }
 ```
 
-4. RSA Keys generation
+<ins>4. RSA Keys generation
 
 - Jwks & KeyGeneratorUtils automate the RSA keypair generation
 - Can specify the path of where to store the keys in application.properties
@@ -1568,7 +1639,7 @@ spring.h2.console.path=/h2-console
 
 NOTE: You want to store the private key somewhere safe that cannot be publicly accessed.
 
-5. JwtUserDetailsService & SecurityConfig part 2
+<ins>5. JwtUserDetailsService & SecurityConfig part 2
 
 JwtUserDetailsService.java:
 ``` java
@@ -1664,7 +1735,7 @@ public class SecurityConfig {
 }
 ```
 
-6. TokenUtil class (generateToken method)
+<ins>6. TokenUtil class (generateToken method)
 
 - Contains token methods
 
@@ -1700,7 +1771,7 @@ public class JwtTokenUtil {
 }
 ```
 
-7. AuthController
+<ins>7. AuthController
 
 - Contains endpoints related to authentication + authorisation
 
