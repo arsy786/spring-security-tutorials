@@ -1392,9 +1392,15 @@ For example, you may want to use a distinct authorization server if you want to:
 - have more than one service - authorization server should be hosted and run as a separate service.
 - harden security - isolating something as critical as authentication provides value because the attack surface is reduced.
 
-It is more popular in the case of microservices architecture where the single authentication server can be used for multiple resource servers.
+It is more popular in the case of microservices architecture where the single auth server can be used for multiple resource servers.
 
-<ins>Support Material
+An example of this exact scenario where Keycloak is used as the authorization server for a microservices architecture is available at:
+
+Link to: [Spring Boot Microservices Project](https://github.com/arsy786/spring-boot-microservices-new)
+<br>
+Link to: [Spring Boot Microservices Project - 5. Security](https://github.com/arsy786/spring-boot-microservices-new#5-security)
+
+<ins>Supporting Material
 
 Link to: [Spring Boot Spring Security JWT (YouTube/DanVega)](https://www.youtube.com/watch?v=UaB-0e76LdQ)
 <br>
